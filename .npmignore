@@ -1,0 +1,39 @@
+# Source
+src/
+examples/
+tests/
+
+# Configuration files
+.github/
+.vscode/
+.eslintrc.js
+.prettierrc
+jest.config.js
+tsconfig.json
+rollup.config.js
+webpack.config.js
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+__tests__/
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Logs and caches
+logs/
+*.log
+.eslintcache
+.npm
+
+# Development files
+.editorconfig
+.env
+*.tgz

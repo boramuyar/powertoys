@@ -1,0 +1,116 @@
+name: Create New Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Name of the new package (e.g., relay-vue)"
+        required: true
+        type: string
+      package_description:
+        description: "Description of the new package"
+        required: true
+        type: string
+      framework:
+        description: "Framework the package is for"
+        required: true
+        type: choice
+        options:
+          - vue
+          - svelte
+          - angular
+          - solid
+          - preact
+          - other
+
+jobs:
+  create-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Create package directory
+        run: mkdir -p packages/${{ github.event.inputs.package_name }}
+
+      - name: Create package.json
+        run: |
+          cat > packages/${{ github.event.inputs.package_name }}/package.json << EOF
+          {
+            "name": "@powertoys/${{ github.event.inputs.package_name }}",
+            "version": "0.1.0",
+            "description": "${{ github.event.inputs.package_description }}",
+            "main": "dist/index.js",
+            "module": "dist/index.esm.js",
+            "types": "dist/index.d.ts",
+            "files": [
+              "dist"
+            ],
+            "scripts": {
+              "build": "rollup -c",
+              "dev": "rollup -c -w",
+              "test": "jest",
+              "lint": "eslint src --ext .ts,.tsx"
+            },
+            "peerDependencies": {
+              "@powertoys/relay": "workspace:*"
+            },
+            "devDependencies": {
+              "@powertoys/shared-config": "workspace:*"
+            },
+            "author": "Boram Uyar",
+            "license": "MIT"
+          }
+          EOF
+
+      - name: Create src directory
+        run: mkdir -p packages/${{ github.event.inputs.package_name }}/src
+
+      - name: Create index.ts
+        run: |
+          cat > packages/${{ github.event.inputs.package_name }}/src/index.ts << EOF
+          // @powertoys/${{ github.event.inputs.package_name }}
+
+          export const version = '0.1.0';
+
+          // Add your code here
+
+          EOF
+
+      - name: Setup shared config
+        run: |
+          if [ -f packages/shared-config/setup-package.js ]; then
+            node packages/shared-config/setup-package.js ${{ github.event.inputs.package_name }}
+          else
+            echo "Shared config setup script not found. Skipping."
+          fi
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat: add ${{ github.event.inputs.package_name }} package"
+          title: "feat: add ${{ github.event.inputs.package_name }} package"
+          body: |
+            This PR adds a new package: `@powertoys/${{ github.event.inputs.package_name }}`
+
+            **Description**: ${{ github.event.inputs.package_description }}
+            **Framework**: ${{ github.event.inputs.framework }}
+
+            Created via GitHub Actions workflow.
+          branch: feat/add-${{ github.event.inputs.package_name }}
+          base: main
