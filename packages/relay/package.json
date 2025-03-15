@@ -1,6 +1,6 @@
 {
   "name": "@powertoys/relay",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Tab 2 tab communication on web applications",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
