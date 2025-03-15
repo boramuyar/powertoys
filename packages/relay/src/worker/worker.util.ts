@@ -9,7 +9,7 @@ export function createRelayWorker(url?: string): SharedWorker | null {
     try {
       // Use the provided URL or fall back to environment variable if available
       // Note: process.env.RELAY_WORKER_URL will be replaced at build time
-      // by the consuming application's build tool (see vite.config.js)
+      // by the consuming application's build tool
       const workerUrl =
         url || (typeof process !== "undefined" && process.env.RELAY_WORKER_URL) || "/workers/relay.worker.js";
 

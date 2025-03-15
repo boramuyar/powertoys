@@ -15,7 +15,6 @@
     "test": "jest --passWithNoTests",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "docs": "typedoc --out docs/api src/index.ts"
   },

@@ -60,11 +60,6 @@ type OutgoingWorkerMessage =
   | ActionResponseMessage
   | UnregisterMessage;
 
-interface TabListMessage {
-  type: "TAB_LIST";
-  tabs: any[];
-}
-
 interface TabListItem {
   tabId: string;
   tabName: string;
