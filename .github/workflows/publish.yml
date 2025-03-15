@@ -60,10 +60,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm build
-
-      - name: Run tests
-        run: pnpm test
+        run: pnpm build:packages
 
       - name: Configure Git
         run: |
@@ -73,9 +70,23 @@ jobs:
       - name: Version packages
         if: github.event_name == 'workflow_dispatch'
         run: |
-          pnpm -r exec npm version ${{ github.event.inputs.version }} --no-git-tag-version
+          # Get list of changed packages
+          CHANGED_PACKAGES=$(pnpm list --filter="[origin/main]" --json | jq -r '.[].name')
+
+          # If no packages changed, exit gracefully
+          if [ -z "$CHANGED_PACKAGES" ]; then
+            echo "No packages have changed. Skipping version bump."
+            exit 0
+          fi
+
+          # For each changed package, bump its version
+          for PKG in $CHANGED_PACKAGES; do
+            echo "Bumping version for $PKG"
+            (cd $(pnpm list --filter="$PKG" --json | jq -r '.[].path') && npm version ${{ github.event.inputs.version }} --no-git-tag-version)
+          done
+
           git add .
-          git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
+          git commit -m "chore: bump version to ${{ github.event.inputs.version }} for changed packages"
           git push
 
       - name: Publish to npm
