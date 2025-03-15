@@ -89,10 +89,35 @@ jobs:
           git commit -m "chore: bump version to ${{ github.event.inputs.version }} for changed packages"
           git push
 
+      # Create .npmrc file with auth token
+      - name: Setup .npmrc file
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          echo "registry=https://registry.npmjs.org/" >> .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      # Publish packages in the correct order
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm --filter="[origin/main]" publish --access public --no-git-checks
+        run: |
+          # First publish the relay package
+          if pnpm list --filter="@powertoys/relay" --json | jq -e '.[].name == "@powertoys/relay"' > /dev/null; then
+            echo "Publishing @powertoys/relay"
+            pnpm --filter="@powertoys/relay" publish --access public --no-git-checks || true
+          fi
+
+          # Wait a bit for npm registry to update
+          sleep 10
+
+          # Then publish the relay-react package
+          if pnpm list --filter="@powertoys/relay-react" --json | jq -e '.[].name == "@powertoys/relay-react"' > /dev/null; then
+            echo "Publishing @powertoys/relay-react"
+            pnpm --filter="@powertoys/relay-react" publish --access public --no-git-checks || true
+          fi
+
+          # Publish any other packages that have changed
+          pnpm --filter="[origin/main]" --filter="!@powertoys/relay" --filter="!@powertoys/relay-react" publish --access public --no-git-checks || true
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

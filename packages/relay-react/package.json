@@ -23,13 +23,16 @@
     "typescript",
     "react"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
-    "@powertoys/relay": "workspace:*",
+    "@powertoys/relay": "^1.2.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@powertoys/relay": "workspace:*"
+    "@powertoys/relay": "^1.2.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",
