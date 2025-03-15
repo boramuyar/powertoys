@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   { ignores: ["dist"] },
@@ -11,8 +12,11 @@ export default tseslint.config(
       ecmaVersion: 2020,
       globals: globals.browser,
     },
-    plugins: {},
+    plugins: {
+      "react-hooks": reactHooks,
+    },
     rules: {
+      ...reactHooks.configs.recommended.rules,
       "no-explicit-any": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "no-case-declarations": "off",

@@ -6,7 +6,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import peerDepsExternal from "rollup-plugin-peer-deps-external";
 import packageJson from "./package.json" assert { type: "json" };
 
-const commonExternal = ["path", "fs", "webpack", "vite", "rollup", "esbuild"];
+const commonExternal = ["react", "react-dom"];
 
 export default [
   // Worker build

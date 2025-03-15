@@ -25,6 +25,117 @@ yarn add @powertoys/relay
 
 ## Basic Usage
 
+### 1. Define Your Action Handlers
+
+```typescript
+// handlers/worksheet-handlers.ts
+import { ActionHandler } from "@powertoys/relay";
+
+export interface SelectRangePayload {
+  address: string;
+  sheetName?: string;
+}
+
+const selectRange: ActionHandler<SelectRangePayload, void> = async payload => {
+  const { address, sheetName } = payload;
+  // Implementation...
+};
+
+export const worksheetHandlers = {
+  SELECT_RANGE: selectRange,
+};
+
+// handlers/workbook-handlers.ts
+export interface WorkbookInfo {
+  name: string;
+  sheets: string[];
+}
+
+const getWorkbookInfo: ActionHandler<void, WorkbookInfo> = async () => {
+  // Implementation...
+  return {
+    name: "Example Workbook",
+    sheets: ["Sheet1", "Sheet2"],
+  };
+};
+
+export const workbookHandlers = {
+  GET_WORKBOOK_INFO: getWorkbookInfo,
+};
+```
+
+### 2. Initialize the Relay
+
+```typescript
+// Function to generate tab info (optional)
+async function generateTabInfo() {
+  const randomId = `tab_${Math.random().toString(36).slice(2, 9)}`;
+  return {
+    tabId: randomId,
+    tabName: `Document ${randomId.slice(-4)}`,
+  };
+}
+
+// Create the relay instance
+export const relay = new Relay({
+  handlers: {
+    ...worksheetHandlers,
+    ...workbookHandlers,
+  },
+  getTabInfo: generateTabInfo,
+});
+```
+
+### 3. Use with React
+
+```tsx
+// App.tsx
+
+function App() {
+  return (
+    <RelayProvider relay={relay}>
+      <Dashboard />
+    </RelayProvider>
+  );
+}
+```
+
+```tsx
+// Dashboard.tsx
+
+function Dashboard() {
+  const tabInfo = useTabInfo();
+  const tabList = useTabList();
+  const requestAction = useRequestAction();
+
+  const getWorkbookInfo = async tabId => {
+    try {
+      const info = await requestAction<WorkbookInfo>(tabId, "GET_WORKBOOK_INFO");
+      console.log("Workbook info:", info);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Current Tab: {tabInfo?.tabName}</h1>
+      <h2>Connected Tabs:</h2>
+      <ul>
+        {tabList.map(tab => (
+          <li key={tab.tabId}>
+            {tab.tabName}
+            {tab.tabId !== tabInfo?.tabId && <button onClick={() => getWorkbookInfo(tab.tabId)}>Get Info</button>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Framework Agnostic Usage
+
 ```typescript
 import { Relay } from "@powertoys/relay";
 

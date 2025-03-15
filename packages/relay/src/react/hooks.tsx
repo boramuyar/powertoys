@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext, createContext, useRef } from "react";
-import { Relay, TabInfo, TabListItem } from "@powertoys/relay";
+import { Relay } from "../core/relay";
+import { TabInfo, TabListItem } from "src/types";
 
 // Context for the tab communicator
 const RelayContext = createContext<Relay | null>(null);
