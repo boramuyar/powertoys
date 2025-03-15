@@ -17,6 +17,7 @@ export default function webpackPlugin(userOptions: RelayPluginOptions = {}) {
       });
 
       // Define the environment variable for the worker URL
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       new (require("webpack").DefinePlugin)({
         [`process.env.${options.envVarName}`]: JSON.stringify(workerUrl),
       }).apply(compiler);

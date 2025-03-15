@@ -80,6 +80,9 @@ importers:
         specifier: '>=5.0.0'
         version: 5.98.0(esbuild@0.25.1)
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.21.0
+        version: 9.22.0
       '@rollup/plugin-commonjs':
         specifier: ^28.0.3
         version: 28.0.3(rollup@4.35.0)
@@ -116,6 +119,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.22.0)
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@22.13.10)
@@ -189,6 +195,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.22.0)
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
