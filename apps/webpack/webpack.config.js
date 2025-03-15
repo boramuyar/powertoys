@@ -4,6 +4,8 @@ const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
+const fs = require("fs");
+const path = require("path");
 
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DEPLOYMENT LOCATION
@@ -11,6 +13,40 @@ const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DE
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
   return { ca: httpsOptions.ca, key: httpsOptions.key, cert: httpsOptions.cert };
+}
+
+function RelayWorkerPlugin() {
+  return {
+    apply(compiler) {
+      // Copy the worker file
+      compiler.hooks.afterEmit.tap("RelayWorkerPlugin", (compilation) => {
+        const srcPath = path.resolve(
+          process.cwd(),
+          "node_modules/@powertoys/relay/dist/relay.worker.js"
+        );
+        const destDir = path.resolve(process.cwd(), "public");
+        const destPath = path.join(destDir, "relay.worker.js");
+
+        try {
+          // Create public directory if it doesn't exist
+          if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+          }
+
+          // Copy the worker file
+          fs.copyFileSync(srcPath, destPath);
+          console.log(`✅ Relay worker file copied to ${destPath}`);
+        } catch (error) {
+          console.error(`❌ Failed to copy Relay worker file:`, error);
+        }
+      });
+
+      // Set the environment variable for the worker URL
+      new webpack.DefinePlugin({
+        "process.env.RELAY_WORKER_URL": JSON.stringify("/relay.worker.js"),
+      }).apply(compiler);
+    },
+  };
 }
 
 module.exports = async (env, options) => {
@@ -93,7 +129,7 @@ module.exports = async (env, options) => {
       new webpack.ProvidePlugin({
         Promise: ["es6-promise", "Promise"],
       }),
-      webpackPlugin({}),
+      RelayWorkerPlugin(),
     ],
     devServer: {
       hot: true,

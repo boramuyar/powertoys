@@ -28,7 +28,7 @@
   "dependencies": {
     "@fluentui/react-components": "^9.55.1",
     "@fluentui/react-icons": "^2.0.264",
-    "@powertoys/relay": "^1.2.0",
+    "@powertoys/relay": "^1.2.1",
     "@powertoys/relay-react": "^1.0.0",
     "core-js": "^3.36.0",
     "es6-promise": "^4.2.8",
