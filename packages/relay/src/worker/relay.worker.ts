@@ -86,14 +86,6 @@ worker.onconnect = function (e: MessageEvent): void {
 
   console.log("New connection to worker established");
 
-  // port.addEventListener("error", function (err) {
-  //   console.error("Port error:", err);
-  //   if (tabId && isPortActive) {
-  //     unregisterClient(tabId);
-  //     isPortActive = false;
-  //   }
-  // });
-
   port.onmessage = function (event: MessageEvent): void {
     const message = event.data as OutgoingWorkerMessage;
 
@@ -112,6 +104,9 @@ worker.onconnect = function (e: MessageEvent): void {
         }
         // Register a new tab with the system
         tabId = message.tabId;
+        if (tabId === "*") console.error("Tab ID cannot be *, use * to broadcast to all clients");
+        tabId = crypto.randomUUID().slice(-8);
+        console.warn("Using random tab ID:", tabId);
         const tabInfo: TabInfoInternal = {
           tabId: tabId,
           tabName: message.tabName,
@@ -160,12 +155,26 @@ worker.onconnect = function (e: MessageEvent): void {
             payload: message.payload,
           });
         } else if (tabId) {
-          // Notify requestor that target is not available
-          port.postMessage({
-            type: "ACTION_ERROR",
-            requestId: message.requestId,
-            error: "Target tab not available",
-          });
+          // If the target tab id is *, forward the request to all clients.
+          if (message.targetTabId === "*") {
+            const ports = Array.from(connections.values()).filter(p => p !== port);
+            ports.forEach(p => {
+              p.postMessage({
+                type: "ACTION_REQUEST",
+                action: message.action,
+                requestId: message.requestId,
+                requestorId: tabId,
+                payload: message.payload,
+              });
+            });
+          } else {
+            // Notify requestor that target is not available
+            port.postMessage({
+              type: "ACTION_ERROR",
+              requestId: message.requestId,
+              error: "Target tab not available",
+            });
+          }
         }
         break;
 
