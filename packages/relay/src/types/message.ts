@@ -48,18 +48,28 @@ export interface UnregisterMessage extends Message {
   tabId: string;
 }
 
+export interface TestUrlMessage extends Message {
+  type: "TEST_URL";
+}
+
 export type OutgoingWorkerMessage =
   | RegisterMessage
   | HeartbeatMessage
   | GetTabListMessage
   | RequestActionMessage
   | ActionResponseMessage
-  | UnregisterMessage;
+  | UnregisterMessage
+  | TestUrlMessage;
 
 // Messages received from the worker
 export interface TabListMessage extends Message {
   type: "TAB_LIST";
   tabs: TabListItem[];
+}
+
+export interface TestUrlResponseMessage extends Message {
+  type: "TEST_URL_RESPONSE";
+  tabs: number;
 }
 
 export interface ActionResultMessage extends Message {

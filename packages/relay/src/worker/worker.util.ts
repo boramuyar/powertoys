@@ -1,4 +1,10 @@
 /**
+ * This constant will be replaced with the actual worker code during build.
+ * It contains the entire worker script as a string.
+ */
+export const WORKER_CODE = "__WORKER_CODE_PLACEHOLDER__";
+
+/**
  * Creates a SharedWorker with the provided URL
  * @param config Configuration options
  * @returns SharedWorker instance or null if SharedWorker is not supported
@@ -17,6 +23,7 @@ export function createRelayWorker(url?: string): SharedWorker | null {
       const workerName = "powertoys-relay-worker";
 
       // Create the worker
+      console.log("creating worker", workerUrl);
       return new SharedWorker(workerUrl, { name: workerName });
     } catch (error) {
       console.error("Failed to create shared worker:", error);

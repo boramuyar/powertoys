@@ -1,4 +1,3 @@
-import { createRelayWorker } from "../worker/worker.util";
 import { Observable, Subscriber } from "./observer";
 import {
   TabInfo,
@@ -10,6 +9,7 @@ import {
   TabCommunicatorEvent,
   ActionRequestMessage,
 } from "../types";
+import { createWorkerBlobUrl } from "./url";
 
 export interface RelayOptions {
   handlers?: ActionHandlerMap;
@@ -29,14 +29,30 @@ export class Relay {
   private handlers: ActionHandlerMap;
   private isInitialized = false;
   private options: RelayOptions;
+  private status: "idle" | "connecting" | "creating" | "waiting" | "connected" = "idle";
+  private channel: BroadcastChannel;
+  private workerUrl?: string;
 
   // Observables for different events
   private events$ = new Observable<TabCommunicatorEvent>();
   private tabList$ = new Observable<TabListItem[]>();
 
   constructor(options: RelayOptions) {
+    this.channel = new BroadcastChannel("relay-channel");
+    this.channel.onmessage = this.handleChannelMessage.bind(this);
+    this.channel.postMessage("KNOCK");
+    setTimeout(
+      () => {
+        if (this.status === "idle") {
+          this.status = "creating";
+          this.channel.postMessage("CREATING");
+          setTimeout(() => this.initialize(), 300);
+        }
+      },
+      Math.min(Math.random() * 2000, 300)
+    );
     this.options = {
-      heartbeatInterval: 10000, // Default to 10 seconds
+      heartbeatInterval: 5000, // Default to 5 seconds
       ...options,
     };
     this.handlers = options.handlers ?? {};
@@ -44,12 +60,49 @@ export class Relay {
     // Log to help debug multiple instances
   }
 
+  private handleChannelMessage(event: MessageEvent): void {
+    const message = event.data;
+    switch (message) {
+      case "KNOCK":
+        switch (this.status) {
+          case "creating":
+            this.channel.postMessage("CREATING");
+            break;
+          case "connected":
+            this.channel.postMessage(this.workerUrl);
+            break;
+        }
+        break;
+      case "CREATING":
+        if (this.isInitialized) return;
+        this.status = "waiting";
+        break;
+      default:
+        if (message.startsWith("blob:") && !this.isInitialized) {
+          this.status = "connecting";
+          this.workerUrl = message;
+          this.initialize();
+        }
+        break;
+    }
+  }
+
   /**
    * Initialize the tab communicator
    * @returns A promise that resolves when initialization is complete
    */
   public async initialize(): Promise<void> {
+    // Add a small random delay to prevent all tabs from initializing simultaneously
     if (this.isInitialized) return;
+
+    if (this.status === "idle" || this.status === "waiting") return;
+
+    if (this.status === "connecting" && !this.workerUrl) return;
+
+    if (this.status === "creating" && !this.workerUrl) {
+      this.workerUrl = createWorkerBlobUrl();
+      this.channel.postMessage(this.workerUrl);
+    }
 
     try {
       // Get tab info
@@ -63,21 +116,9 @@ export class Relay {
         };
       }
 
-      // Create shared worker
-      // this.worker = createRelayWorker(this.options.workerUrl);
-      // if (!this.worker) {
-      //   throw new Error("Failed to create shared worker");
-      // }
+      if (!this.workerUrl) return;
 
-      if (!sharedWorkerInstance) {
-        sharedWorkerInstance = createRelayWorker(this.options.workerUrl);
-        if (!sharedWorkerInstance) {
-          throw new Error("Failed to create shared worker");
-        }
-        console.log("Created new SharedWorker instance");
-      } else {
-        console.log("Reusing existing SharedWorker instance");
-      }
+      sharedWorkerInstance = new SharedWorker(this.workerUrl);
 
       this.port = sharedWorkerInstance.port;
 
@@ -86,6 +127,7 @@ export class Relay {
 
       // Start the port
       this.port.start();
+      this.status = "connected";
 
       // Register this tab with the shared worker
       this.sendMessage({
@@ -307,7 +349,8 @@ export class Relay {
    * Clean up the tab communicator
    */
   public cleanup(): void {
-    console.log(`Cleaning up Relay instance ${this.tabInfo?.tabId}`);
+    if (this.workerUrl) URL.revokeObjectURL(this.workerUrl);
+    console.warn(`Cleaning up Relay instance ${this.tabInfo?.tabId}`);
 
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);

@@ -23,6 +23,10 @@ interface RegisterMessage extends BaseMessage {
   tabName: string;
 }
 
+interface TestUrlMessage extends BaseMessage {
+  type: "TEST_URL";
+}
+
 interface HeartbeatMessage extends BaseMessage {
   type: "HEARTBEAT";
   tabId: string;
@@ -58,6 +62,7 @@ type OutgoingWorkerMessage =
   | GetTabListMessage
   | RequestActionMessage
   | ActionResponseMessage
+  | TestUrlMessage
   | UnregisterMessage;
 
 interface TabListItem {
@@ -91,17 +96,17 @@ worker.onconnect = function (e: MessageEvent): void {
 
     switch (message.type) {
       case "REGISTER":
-        console.log("Registering tab:", message.tabId, message.tabName);
-
         if (tabRegistry.has(message.tabId)) {
           console.log("Tab already registered, cleaning up old connection");
           unregisterClient(message.tabId);
         }
         // Register a new tab with the system
         tabId = message.tabId;
-        if (tabId === "*") console.error("Tab ID cannot be *, use * to broadcast to all clients");
-        tabId = crypto.randomUUID().slice(-8);
-        console.warn("Using random tab ID:", tabId);
+        if (tabId === "*") {
+          console.error("Tab ID cannot be *, use * to broadcast to all clients");
+          port.close();
+          return;
+        }
         const tabInfo: TabInfoInternal = {
           tabId: tabId,
           tabName: message.tabName,
@@ -120,12 +125,19 @@ worker.onconnect = function (e: MessageEvent): void {
         broadcastTabList();
         break;
 
+      case "TEST_URL":
+        port.postMessage({ type: "TEST_URL_RESPONSE", tabs: getTabListForClients().length });
+        port.close();
+        break;
+
       case "HEARTBEAT":
         // Update the last heartbeat time for this tab
         if (message.tabId && tabRegistry.has(message.tabId)) {
           const tabInfo = tabRegistry.get(message.tabId)!;
           tabInfo.lastHeartbeat = Date.now();
           tabRegistry.set(message.tabId, tabInfo);
+        } else {
+          console.log("heartbeat received for unknown tab", message.tabId);
         }
         break;
 
@@ -207,7 +219,7 @@ worker.onconnect = function (e: MessageEvent): void {
 
   // Handle disconnection
   port.onmessageerror = function (): void {
-    console.log("Message error on port");
+    console.error("Message error on port");
     handlePortClosure();
   };
 
@@ -216,7 +228,7 @@ worker.onconnect = function (e: MessageEvent): void {
 
 // Function to unregister a client
 function unregisterClient(tabId: string): void {
-  console.log("Unregistering client:", tabId);
+  console.warn("Unregistering client:", tabId);
   const tabInfo = tabRegistry.get(tabId);
 
   connections.delete(tabId);
@@ -256,15 +268,7 @@ function checkStaleConnections(): void {
 setInterval(checkStaleConnections, 10000); // Check every 10 seconds
 
 setInterval(() => {
-  console.log(`Worker status: ${tabRegistry.size} active tabs`);
-  if (tabRegistry.size > 0) {
-    console.log(
-      "Active tabs:",
-      Array.from(tabRegistry.entries())
-        .map(([id, info]) => `${id} (${info.tabName}) - last seen ${(Date.now() - info.lastHeartbeat) / 1000}s ago`)
-        .join(", ")
-    );
-  }
+  if (tabRegistry.size === 0) self.close();
 }, 10000);
 
 // Function to get tab list for clients (excluding port information)

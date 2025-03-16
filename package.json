@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "pnpm --filter \"./**/**\" dev",
     "build:packages": "pnpm --filter \"./packages/**\" build",
     "lint:packages": "pnpm --filter \"./packages/**\" lint",
     "format:packages": "pnpm --filter \"./packages/**\" format"
