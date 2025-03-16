@@ -102,7 +102,6 @@ function App() {
 
 ```tsx
 // Dashboard.tsx
-
 function Dashboard() {
   const tabInfo = useTabInfo();
   const tabList = useTabList();
